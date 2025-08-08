@@ -1,4 +1,6 @@
 #local files
+local/
+local/*
 pdf-files/local/
 *local.*
 
