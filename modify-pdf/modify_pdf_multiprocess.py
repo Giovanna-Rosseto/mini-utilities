@@ -475,7 +475,7 @@ class PDFModifier:
             else:
                 with open(self.output_pdf_path, "wb") as output_file:
                     writer.write(output_file)
-            
+
             print("Finalization complete.")
             print(f"Success: The modified PDF was saved to "
                   f"'{self.output_pdf_path}'.")
@@ -646,7 +646,8 @@ if __name__ == "__main__":
             output_pdf_path=OUTPUT,
             input_start_page=11,
             input_end_page=150,
-            action='add_notes', #'duplicate', 'add_notes','merge_side_by_side','resize'
+            #'duplicate', 'add_notes','merge_side_by_side','resize'
+            action='add_notes',
             margin_proportion=0.5,
             target_size="A4_Landscape",
             compress_output=True
