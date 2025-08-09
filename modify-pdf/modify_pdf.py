@@ -43,7 +43,8 @@ class PDFModifier:
     def __init__(self, input_pdf_path=None, output_pdf_path=None, action=None,
                  background_pdf_path=None, margin_proportion=0.5,
                  merge_pdf_path=None, target_size="A4",
-                 input_start_page=0, input_end_page=None):
+                 input_start_page=0, input_end_page=None,
+                 append_to_existing=False):
         """
         Initializes the PDFModifier class with all necessary parameters for
         a specific modification task.
@@ -69,6 +70,9 @@ class PDFModifier:
             input_end_page (int, optional): The ending page index (0-based,
                                             exclusive) for processing. Defaults
                                             to the end of the document.
+            append_to_existing (bool, optional): If True, appends the new pages
+                                                 to an existing output PDF file.
+                                                 Defaults to False (overwrite).
         """
         self.input_pdf_path = input_pdf_path
 
@@ -90,6 +94,7 @@ class PDFModifier:
         self.target_size = target_size
         self.input_start_page = input_start_page
         self.input_end_page = input_end_page
+        self.append_to_existing = append_to_existing
 
     @staticmethod
     def _verify_paths(*paths):
@@ -134,20 +139,27 @@ class PDFModifier:
 
     def _duplicate_pages(self, pages_to_process, writer):
         """
-        Duplicates each page in a list of PDF pages.
+        Duplicates each page in a list of PDF pages, showing progress in chunks.
         This is a private method, called only by modify_pdf.
         """
         num_pages = len(pages_to_process)
-        show_counter = num_pages > 10
+        if num_pages == 0:
+            return
+
+        chunk_size = 10
+        print(f"Starting to process {num_pages} pages in chunks of {chunk_size}...")
 
         for i, page in enumerate(pages_to_process):
             writer.add_page(page)
             writer.add_page(page)
-            if show_counter and (i + 1) % 10 == 0:
-                print(f"Processing page {i + 1} of {num_pages}...")
+            # Print a message every 10 pages processed.
+            if num_pages > chunk_size and (i + 1) % chunk_size == 0 or i == num_pages - 1:
+                print(f"Processed {i + 1} of {num_pages} pages.")
 
+        print("\nFinalizing PDF file...")
         with open(self.output_pdf_path, "wb") as output_file:
             writer.write(output_file)
+        print("Finalization complete.")
 
         print(f"Success: The duplicated PDF was saved to "
               f"'{self.output_pdf_path}'.")
@@ -155,16 +167,21 @@ class PDFModifier:
     def _add_note_margin(self, pages_to_process, writer):
         """
         Adds a note-taking margin to each page by placing the original page
-        on a new page with a user-defined margin proportion.
+        on a new page with a user-defined margin proportion, showing progress.
         This is a private method, called only by modify_pdf.
         """
         if not 0 <= self.margin_proportion < 1:
             raise ValueError("Error: 'margin_proportion' must be between "
                              "0 and 1.")
 
-        background_reader = None
+        if len(pages_to_process) == 0:
+            return
+
+        chunk_size = 10
         num_pages = len(pages_to_process)
-        show_counter = num_pages > 10
+        print(f"Starting to process {num_pages} pages in chunks of {chunk_size}...")
+
+        background_reader = None
         try:
             if self.background_pdf_path:
                 self._verify_paths(self.background_pdf_path)
@@ -196,11 +213,14 @@ class PDFModifier:
                         Transformation().scale(scale_bg)
                         .translate(page_width, 0)
                     )
-                if show_counter and (i + 1) % 10 == 0:
-                    print(f"Processing page {i + 1} of {num_pages}...")
+                # Print a message every 10 pages processed.
+                if num_pages > chunk_size and (i + 1) % chunk_size == 0 or i == num_pages - 1:
+                    print(f"Processed {i + 1} of {num_pages} pages.")
 
+            print("\nFinalizing PDF file...")
             with open(self.output_pdf_path, "wb") as output_file:
                 writer.write(output_file)
+            print("Finalization complete.")
 
             print(f"Success: The note-taking PDF was saved to "
                   f"'{self.output_pdf_path}'.")
@@ -211,12 +231,17 @@ class PDFModifier:
     def _merge_pdf_side_by_side(self, pages_to_process, writer):
         """
         Merges each page of a PDF with a page from another PDF, placing them
-        side-by-side on a new A4 landscape page.
+        side-by-side on a new A4 landscape page, showing progress.
         This is a private method, called only by modify_pdf.
         """
-        merge_reader = None
+        if len(pages_to_process) == 0:
+            return
+
+        chunk_size = 10
         num_pages = len(pages_to_process)
-        show_counter = num_pages > 10
+        print(f"Starting to process {num_pages} pages in chunks of {chunk_size}...")
+
+        merge_reader = None
         try:
             self._verify_paths(self.merge_pdf_path)
             merge_reader = PdfReader(self.merge_pdf_path)
@@ -256,11 +281,14 @@ class PDFModifier:
                     .translate(width / 2, 0)
                 )
 
-                if show_counter and (i + 1) % 10 == 0:
-                    print(f"Processing page {i + 1} of {num_pages}...")
+                # Print a message every 10 pages processed.
+                if num_pages > chunk_size and (i + 1) % chunk_size == 0 or i == num_pages - 1:
+                    print(f"Processed {i + 1} of {num_pages} pages.")
 
+            print("\nFinalizing PDF file...")
             with open(self.output_pdf_path, "wb") as output_file:
                 writer.write(output_file)
+            print("Finalization complete.")
 
             print(f"Success: The modified PDF was saved to "
                   f"'{self.output_pdf_path}'.")
@@ -271,7 +299,7 @@ class PDFModifier:
     def _resize_pdf(self, pages_to_process, writer):
         """
         Resizes each page of a PDF to a specific paper size,
-        scaling the content to fit within the new dimensions.
+        scaling the content to fit within the new dimensions, showing progress.
         This is a private method, called only by modify_pdf.
         """
         target_dimensions = PAPER_SIZES.get(self.target_size)
@@ -280,9 +308,13 @@ class PDFModifier:
                 f"Error: Invalid target size '{self.target_size}'.\n"
                 f"Supported sizes are: {', '.join(PAPER_SIZES.keys())}")
 
+        if len(pages_to_process) == 0:
+            return
+
+        chunk_size = 10
         target_width, target_height = target_dimensions
         num_pages = len(pages_to_process)
-        show_counter = num_pages > 10
+        print(f"Starting to process {num_pages} pages in chunks of {chunk_size}...")
 
         for i, page in enumerate(pages_to_process):
             page_width = page.mediabox.width
@@ -299,11 +331,14 @@ class PDFModifier:
                 page,
                 Transformation().scale(scale)
             )
-            if show_counter and (i + 1) % 10 == 0:
-                print(f"Processing page {i + 1} of {num_pages}...")
+            # Print a message every 10 pages processed.
+            if num_pages > chunk_size and (i + 1) % chunk_size == 0 or i == num_pages - 1:
+                print(f"Processed {i + 1} of {num_pages} pages.")
 
+        print("\nFinalizing PDF file...")
         with open(self.output_pdf_path, "wb") as output_file:
             writer.write(output_file)
+        print("Finalization complete.")
 
         print(f"Success: The resized PDF was saved to "
               f"'{self.output_pdf_path}'.")
@@ -338,6 +373,19 @@ class PDFModifier:
                       " for some actions.")
 
             writer = PdfWriter()
+            if self.append_to_existing and os.path.exists(self.output_pdf_path):
+                print(f"Appending pages to existing file: "
+                      f"'{self.output_pdf_path}'")
+                try:
+                    existing_reader = PdfReader(self.output_pdf_path)
+                    for page in existing_reader.pages:
+                        writer.add_page(page)
+                    existing_reader.close()
+                except Exception as e:
+                    print(f"Warning: Could not read existing PDF for "
+                          f"appending. Creating a new file instead. "
+                          f"Error: {e}")
+
             total_pages = len(reader.pages)
 
             if self.input_start_page < 0:
@@ -479,8 +527,7 @@ if __name__ == "__main__":
     print("\n")
 
     # Example 8: Demonstrate using the new page range functionality
-    print("--- Running Example 8: Duplicating a specific page range" +
-          " (pages 1 to 3) ---")
+    print("--- Running Example 8: Duplicating a specific page range (pages 1 to 3) ---")
     pdf_modifier_8 = PDFModifier(
         input_pdf_path="pdf-files/sample.pdf",
         output_pdf_path="pdf-files/sample_range_duplicate.pdf",
@@ -488,8 +535,7 @@ if __name__ == "__main__":
         input_start_page=1,
         input_end_page=3
     )
-    # This will process pages from index 1 (the second page) up to but
-    # not including index 3
+    # This will process pages from index 1 (the second page) up to but not including index 3
     pdf_modifier_8.modify_pdf()
     pdf_modifier_8._print_pdf_info("pdf-files/sample_range_duplicate.pdf",
                                    "After Modification")
