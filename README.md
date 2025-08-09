@@ -9,9 +9,7 @@ This script provides a set of functions for modifying and manipulating PDF files
 
 * **Chained Actions:** You can apply a sequence of modifications (e.g., duplicate pages and then resize them) by providing a list of actions.
 
-* **Multiprocessing:** The `run_in_separate_process` method allows the modification to run in a separate process, preventing the main program from freezing during long operations.
-
-* **File Compression:** A `compress_output` option can be used to re-save the final PDF, which may help to reduce the file size.
+* **Multiprocessing:** Utilizes all available CPU cores to process PDF pages in parallel, improving performance for large files.
 
 * **Duplicate Pages:** Quickly create a new PDF where each page of the original document is duplicated.
 
@@ -27,7 +25,7 @@ The dependency for this script is the `pypdf` library.
 
 ## How to Use
 
-The script's functionality is centralized in the `PDFModifier` class. You can create an instance of this class with the desired parameters and then call either `modify_pdf()` for synchronous execution or `run_in_separate_process()` for non-blocking execution.
+The primary way to use the script is by creating an instance of the PDFModifier class and calling its modify_pdf() method.
 
 ### Parameters for `PDFModifier`
 
@@ -45,7 +43,8 @@ The script's functionality is centralized in the `PDFModifier` class. You can cr
 
 * **`target_size`** (string, optional): The name of the paper size from the `PAPER_SIZES` dictionary. Defaults to `'A4'`. Used with `'resize'`.
 
-* **`compress_output`** (boolean, optional): If `True`, the output PDF will be re-saved with compression applied. Defaults to `False`.
+* **`num_processes`** (int, optional): The number of parallel processes to use. Defaults to the number of CPU cores.
+
 
 ### Available Paper Sizes
 
@@ -67,3 +66,28 @@ The `PAPER_SIZES` dictionary includes all standard paper sizes as well as their 
 
 * Letter_Landscape, Legal_Landscape, Tabloid_Landscape
 
+### Typical example of usage
+    OUTPUT = "path\\to\\output.pdf"
+    CORNELL = "path\\to\\cornell.pdf" # my favorite notebook style
+    GRID_PAPER = "path\\to\\grid_paper.pdf"
+    INPUT = "path\\to\\input.pdf"
+    try:
+        # Create an instance of the class
+        pdf_modifier = PDFModifier(
+            input_pdf_path=INPUT,
+            background_pdf_path=GRID_PAPER,
+            merge_pdf_path=CORNELL,
+            output_pdf_path=OUTPUT,
+            input_start_page=11,
+            input_end_page=150,
+            #'duplicate', 'add_notes','merge_side_by_side','resize'
+            action='add_notes',
+            margin_proportion=0.5,
+            target_size="A4_Landscape",
+            compress_output=True
+        )
+
+        pdf_modifier.run_in_separate_process()
+        pdf_modifier._print_pdf_info(OUTPUT, "After Process")
+    except Exception as e:
+        print(f"An error occurred: {e}") """
