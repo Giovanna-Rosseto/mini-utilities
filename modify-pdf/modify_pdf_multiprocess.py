@@ -85,7 +85,7 @@ class PDFModifier:
                                             exclusive) for processing. Defaults
                                             to the end of the document.
             append_to_existing (bool, optional): If True, appends the new pages
-                                                 to an existing output PDF file.
+                                                 to an existing output PDF.
                                                  Defaults to False (overwrite).
             compress_output (bool, optional): If True, the final output PDF
                                               will be re-saved to attempt to
@@ -197,7 +197,7 @@ class PDFModifier:
         if not 0 <= self.margin_proportion < 1:
             raise ValueError("Error: 'margin_proportion' must be between "
                              "0 and 1.")
-        
+
         num_pages = len(pages_to_process)
         if num_pages == 0:
             return new_pages
@@ -247,7 +247,7 @@ class PDFModifier:
         finally:
             if background_reader:
                 background_reader.close()
-        
+
         return new_pages
 
     def _merge_pdf_side_by_side(self, pages_to_process):
@@ -315,7 +315,7 @@ class PDFModifier:
         finally:
             if merge_reader:
                 merge_reader.close()
-        
+
         return new_pages
 
     def _resize_pdf(self, pages_to_process):
@@ -331,7 +331,7 @@ class PDFModifier:
                 f"Error: Invalid target size '{self.target_size}'.\n"
                 "Supported sizes are: "
                 f"{', '.join(PAPER_SIZES.keys())}")
-        
+
         num_pages = len(pages_to_process)
         if num_pages == 0:
             return new_pages
@@ -362,7 +362,7 @@ class PDFModifier:
                     i == num_pages - 1:
                 print(f"Processed {i + 1} of {num_pages} pages for "
                       f"'resize'.")
-        
+
         return new_pages
 
     def _modify_and_save(self, q=None):
@@ -426,7 +426,7 @@ class PDFModifier:
 
                 pages_to_process = list(reader.pages[self.input_start_page:
                                                      end_page])
-            
+
             if not pages_to_process and self.actions:
                 print("Error: The specified page range is empty. "
                       "No actions were performed.")
@@ -436,7 +436,7 @@ class PDFModifier:
             for action in self.actions:
                 pages_to_process = actions[action](
                     pages_to_process=pages_to_process)
-            
+
             # Final write to the output file
             writer = PdfWriter()
             if (self.append_to_existing and
@@ -526,7 +526,7 @@ class PDFModifier:
         # Wait for a result from the queue
         while process.is_alive():
             time.sleep(1)
-        
+
         # Check the queue for the result after the process has finished
         try:
             result = q.get_nowait()
@@ -552,8 +552,9 @@ class PDFModifier:
         """
         self._modify_and_save()
 
+
 def usage_examples():
-    # --- Example Usage ---  
+    # --- Example Usage ---
 
     # Example 1: Duplicate each page of the PDF and then resize it
     # in a separate process
@@ -649,7 +650,7 @@ if __name__ == "__main__":
             margin_proportion=0.5,
             target_size="A4_Landscape",
             compress_output=True
-        )  
+        )
 
         pdf_modifier.run_in_separate_process()
         pdf_modifier._print_pdf_info(OUTPUT, "After Process")
